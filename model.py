@@ -43,31 +43,55 @@ class RoboGAN:
 
         self.BCE = tf.keras.losses.BinaryCrossentropy(from_logits=True)
         
+        self.optimizers_init = False
+
         # Generating forward GAN = G: X -> Y
-        X = tf.placeholder(tf.float32, shape=(None,nDimX), name = "X")
+        self.X = tf.placeholder(tf.float32, shape=(None,nDimX), name = "X")
         self.G = self.generator(name="G")
         self.D_Y = self.discriminator(name="D_Y")
 
         # Generating backward GAN = F: Y -> X
-        Y = tf.placeholder(tf.float32, shape=(None, nDimY), name="Y")
+        self.Y = tf.placeholder(tf.float32, shape=(None, nDimY), name="Y")
         self.F = self.generator(name="F")
         self.D_X = self.discriminator(name="D_X")
 
         return
 
+    def make_optimizers(self):
+        """
+        Initializes the Adam optimizers with class learning parameters
+        Four optimizers are created, one for each network
+        """
 
-    # def create_model(nDimX, nDimY):
-    #     # Generating forward GAN = G: X -> Y
-    #     X = tf.placeholder(tf.float32, shape=(None,nDimX), name = "X")
-    #     self.G = self.generator(name="G")
-    #     D_Y = GAN.discriminator(name="D_Y")
+        self.opt_G = tf.train.AdamOptimizer(learning_rate= self.learning_rate, beta1= self.beta1)
+        self.opt_F = tf.train.AdamOptimizer(learning_rate= self.learning_rate, beta1= self.beta1)
+        self.opt_D_Y = tf.train.AdamOptimizer(learning_rate= self.learning_rate, beta1= self.beta1)
+        self.opt_D_X = tf.train.AdamOptimizer(learning_rate= self.learning_rate, beta1= self.beta1)
 
-    #     # Generating backward GAN = F: Y -> X
-    #     Y = tf.placeholder(tf.float32, shape=(None, nDimY), name="Y")
-    #     F = GAN.generator(name="F")
-    #     D_X = GAN.discriminator(name="D_X")
+        return 
+      
+    def optimize(self, gradients):
+        """
+        Builds the graph nodes for running an optimization step
+        
+        Parameters
+        ----------
+            gradients = List of gradients expected in the order used to unpack below
+        """
+          if self.optimizers_init == False:
+               self.make_optimizers()
+          
+          G_gradients, F_gradients, D_Y_gradients, D_X_gradients = gradients
 
+          train_G = self.opt_G.apply_gradients(zip(G_gradients, self.G.trainable_variables))
+          train_F = self.opt_F.apply_gradients(zip(F_gradients, self.F.trainable_variables))
 
+          train_D_Y = self.opt_D_Y.apply_gradients(zip(D_Y_gradients, self.D_Y.trainable_variables))
+          train_D_X = self.opt_D_X.apply_gradients(zip(D_X_gradients, self.D_X.trainable_variables))
+
+          trainers = [train_G, train_F, train_D_Y, train_D_X] 
+
+          return trainers
 
     def generator(self, name, hidden_nodes = [10,10], input_dim = 2, output_dim = 2, initializer = tf.keras.initializers.he_normal() ):
         
