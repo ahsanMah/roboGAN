@@ -67,9 +67,10 @@ class RoboGAN:
         self.opt_F = tf.train.AdamOptimizer(learning_rate= self.learning_rate, beta1= self.beta1)
         self.opt_D_Y = tf.train.AdamOptimizer(learning_rate= self.learning_rate, beta1= self.beta1)
         self.opt_D_X = tf.train.AdamOptimizer(learning_rate= self.learning_rate, beta1= self.beta1)
-
+        
+        self.optimizers_init = True
         return 
-      
+
     def optimize(self, gradients):
         """
         Builds the graph nodes for running an optimization step
@@ -78,20 +79,20 @@ class RoboGAN:
         ----------
             gradients = List of gradients expected in the order used to unpack below
         """
-          if self.optimizers_init == False:
-               self.make_optimizers()
+        if self.optimizers_init == False:
+            self.make_optimizers()
           
-          G_gradients, F_gradients, D_Y_gradients, D_X_gradients = gradients
+        G_gradients, F_gradients, D_Y_gradients, D_X_gradients = gradients
 
-          train_G = self.opt_G.apply_gradients(zip(G_gradients, self.G.trainable_variables))
-          train_F = self.opt_F.apply_gradients(zip(F_gradients, self.F.trainable_variables))
+        train_G = self.opt_G.apply_gradients(zip(G_gradients, self.G.trainable_variables))
+        train_F = self.opt_F.apply_gradients(zip(F_gradients, self.F.trainable_variables))
 
-          train_D_Y = self.opt_D_Y.apply_gradients(zip(D_Y_gradients, self.D_Y.trainable_variables))
-          train_D_X = self.opt_D_X.apply_gradients(zip(D_X_gradients, self.D_X.trainable_variables))
+        train_D_Y = self.opt_D_Y.apply_gradients(zip(D_Y_gradients, self.D_Y.trainable_variables))
+        train_D_X = self.opt_D_X.apply_gradients(zip(D_X_gradients, self.D_X.trainable_variables))
 
-          trainers = [train_G, train_F, train_D_Y, train_D_X] 
+        trainers = [train_G, train_F, train_D_Y, train_D_X] 
 
-          return trainers
+        return trainers
 
     def generator(self, name, hidden_nodes = [10,10], input_dim = 2, output_dim = 2, initializer = tf.keras.initializers.he_normal() ):
         
@@ -123,14 +124,9 @@ class RoboGAN:
 
         return disc
 
-
-    # def get_optimizers():
-
-
-
-
     def cycle_consistency_loss(self, G_Fx, F_Gy, x, y):
-        """ Cycle consistency loss (L1 norm)
+        """ 
+        Cycle consistency loss (L1 norm)
         """
         forward_loss = tf.reduce_mean(tf.abs(F_Gy-x))
         backward_loss = tf.reduce_mean(tf.abs(G_Fx-y))

@@ -25,6 +25,7 @@ def train_step(GAN):
 
      losses = []
      gradients = []
+     trainers = []
 
      with tf.GradientTape() as G_tape,   \
      tf.GradientTape() as D_Y_tape, \
@@ -46,12 +47,15 @@ def train_step(GAN):
           
           cycle_loss = GAN.cycle_consistency_loss(G_Fx, F_Gy, X, Y)
           
+          # Forward Loss
           G_loss = GAN.generator_loss(D_Gy_logits, heuristic=False) + cycle_loss
           D_Y_loss = GAN.discriminator_loss(real_output= D_Y_logits, fake_output= D_Gy_logits)
           
+          # Backward Loss
           F_loss = GAN.generator_loss(D_Fx_logits, heuristic=False) + cycle_loss
           D_X_loss = GAN.discriminator_loss(real_output= D_X_logits, fake_output= D_Fx_logits)
           
+          # Gradient Computations
           G_gradients = G_tape.gradient(G_loss, G.trainable_variables)
           D_Y_gradients = D_Y_tape.gradient(D_Y_loss, D_Y.trainable_variables)
           
@@ -61,6 +65,20 @@ def train_step(GAN):
           losses.extend([G_loss, F_loss, D_Y_loss, D_X_loss])
           gradients.extend([G_gradients, F_gradients, D_Y_gradients, D_X_gradients])
           
-          traienrs = GAN.optimize(gradients)
+          trainers = GAN.optimize(gradients)
 
-     return losses, gradients, trainers
+          # Building summaries
+          tf.summary.histogram('D_Y/true', D_Y_logits)
+          tf.summary.histogram('D_Y/fake', D_Gy_logits)
+          tf.summary.histogram('D_X/true', D_X_logits)
+          tf.summary.histogram('D_X/fake', D_Fx_logits)
+
+          tf.summary.scalar('loss/G', G_loss)
+          tf.summary.scalar('loss/D_Y', D_Y_loss)
+          tf.summary.scalar('loss/F', F_loss)
+          tf.summary.scalar('loss/D_X', D_X_loss)
+          tf.summary.scalar('loss/cycle', cycle_loss)
+
+          summary_op = tf.summary.merge_all()
+
+     return losses, gradients, trainers, summary_op
