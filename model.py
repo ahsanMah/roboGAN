@@ -24,6 +24,29 @@ from tensorflow.keras.layers import Input, Dense
 
 class RoboGAN:
     
+    """
+    A simple CycleGAN implementation that is based on fully connected networks.
+    Gives access to generators and discriminators and their related fucntions.
+
+    Attributes
+    ----------
+    G : The forward Generator that will transform X into Y
+    D_Y : The Discriminator associated with G to distinguish real Y from fake Y samples
+    X : Placeholder node for G's input (should be instantiated inside feed_dict)
+
+    F : The backward Generator that will transform Y into X
+    D_X : The Discriminator associated with F to distinguish real X from fake X samples
+    Y : Placeholder node for F's input (should be instantiated inside feed_dict)
+
+    Methods
+    -------
+    colorspace(c='rgb')
+        Represent the photo in the given colorspace.
+    gamma(n=1.0)
+        Change the photo's gamma exposure.
+
+    """
+    
     def __init__(self,nDimX, nDimY, \
                 lambda1=10,lambda2=10, \
                 learning_rate=2e-4,beta1=0.5):      
@@ -46,14 +69,14 @@ class RoboGAN:
         self.optimizers_init = False
 
         # Generating forward GAN = G: X -> Y
-        self.X = tf.placeholder(tf.float32, shape=(None,nDimX), name = "X")
-        self.G = self.generator(name="G")
-        self.D_Y = self.discriminator(name="D_Y")
+        self.X = tf.placeholder(tf.float32, shape=(None,nDimX), name= "X")
+        self.G = self.generator(name= "G", input_dim= nDimX, output_dim= nDimY)
+        self.D_Y = self.discriminator(name= "D_Y", input_dim= nDimY)
 
         # Generating backward GAN = F: Y -> X
         self.Y = tf.placeholder(tf.float32, shape=(None, nDimY), name="Y")
-        self.F = self.generator(name="F")
-        self.D_X = self.discriminator(name="D_X")
+        self.F = self.generator(name= "F", input_dim= nDimY, output_dim= nDimX)
+        self.D_X = self.discriminator(name= "D_X", input_dim= nDimX)
 
         return
 
@@ -77,7 +100,7 @@ class RoboGAN:
         
         Parameters
         ----------
-            gradients = List of gradients expected in the order used to unpack below
+            gradients : List of gradients expected in the order used to unpack below
         """
         if self.optimizers_init == False:
             self.make_optimizers()
@@ -95,7 +118,24 @@ class RoboGAN:
         return trainers
 
     def generator(self, name, hidden_nodes = [10,10], input_dim = 2, output_dim = 2, initializer = tf.keras.initializers.he_normal() ):
+        """
+        Generator will transform the input data into the output domain
         
+        Parameters
+        ----------
+            name : str
+                Namespace to be used for the model - makes layer names mroe readable
+            hidden_nodes : int array 
+                Number of nodes in each hidden layer (in order)
+            input_dim, output_dim: int
+                Dimensions of the input and output domains for this generator (G: X->Y)
+            initializer: Method from keras.initializers.*, optional
+                A kernel initializer to be used in each layer
+        
+        Returns
+        -------
+            gen : A tf node representing a Keras Sequential model
+        """
         with tf.variable_scope(name):
             # Tells model to expect batches of input_dim features
             # inputs = Input(shape=(input_dim,))
@@ -113,6 +153,21 @@ class RoboGAN:
         """
         Discriminator will output a single real value which will be 
         interpreted as the probability that the given sample is 'real'
+        
+        Parameters
+        ----------
+            name : str
+                Namespace to be used for the model - makes layer names mroe readable
+            hidden_nodes : int array 
+                Number of nodes in each hidden layer (in order)
+            input_dim: int
+                Dimensions of the input this discriminator has to analyze (D(X))
+            initializer: Method from keras.initializers.*, optional
+                A kernel initializer to be used in each layer
+        
+        Returns
+        -------
+            disc : A tf node representing a Keras Sequential model
         """
         with tf.variable_scope(name):
             disc = tf.keras.Sequential([
@@ -148,7 +203,11 @@ class RoboGAN:
         return self.BCE(tf.ones_like(fake_output), fake_output)
 
     def discriminator_loss(self, real_output, fake_output):
-
+        """
+        Discriminator will learn to correctly recognize real outputs (all 1s)
+        while simultaneously recognizing fake samples (all zeros)
+        """
+        
         real_loss = self.BCE(tf.ones_like(real_output), real_output)
         fake_loss = self.BCE(tf.zeros_like(fake_output), fake_output)
         total_loss = 0.5 * (real_loss + fake_loss)
