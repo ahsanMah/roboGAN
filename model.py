@@ -4,24 +4,6 @@ import numpy as np
 
 from tensorflow.keras.layers import Input, Dense
 
-
-# """Description 
-
-# Parameters
-# ----------
-# file_loc : str
-#     The file location of the spreadsheet
-# print_cols : bool, optional
-#     A flag used to print the columns to the console (default is
-#     False)
-
-# Returns
-# -------
-# list
-#     a list of strings used that are the header columns
-# """
-
-
 class RoboGAN:
     
     """
@@ -38,13 +20,6 @@ class RoboGAN:
     D_X : The Discriminator associated with F to distinguish real X from fake X samples
     Y : Placeholder node for F's input (should be instantiated inside feed_dict)
 
-    Methods
-    -------
-    colorspace(c='rgb')
-        Represent the photo in the given colorspace.
-    gamma(n=1.0)
-        Change the photo's gamma exposure.
-
     """
     
     def __init__(self,nDimX, nDimY, \
@@ -53,10 +28,16 @@ class RoboGAN:
         """
         Parameters
         ----------
-            lambda1: integer, weight for forward cycle loss (X->Y->X)
-            lambda2: integer, weight for backward cycle loss (Y->X->Y)
-            learning_rate: float, initial learning rate for Adam
-            beta1: float, momentum term of Adam 
+            nDimX, nDimY: int
+                Dimensions for the two domains X and Y that the CycleGAN will transform between
+            lambda1: integer
+                weight for forward cycle loss (X->Y->X)
+            lambda2: integer
+                weight for backward cycle loss (Y->X->Y)
+            learning_rate: float
+                initial learning rate for Adam
+            beta1: float
+                momentum term of Adam 
         """
         
         self.lambda1 = lambda1
@@ -100,7 +81,13 @@ class RoboGAN:
         
         Parameters
         ----------
-            gradients : List of gradients expected in the order used to unpack below
+            gradients: Tensorflow nodes array
+                List of gradients expected in the order used to unpack below
+
+        Returns
+        -------
+            trainers: Tensorflow nodes array
+                Nodes that represent an optimization step for each network in the CycleGAN
         """
         if self.optimizers_init == False:
             self.make_optimizers()
@@ -116,6 +103,8 @@ class RoboGAN:
         trainers = [train_G, train_F, train_D_Y, train_D_X] 
 
         return trainers
+
+    # TODO: Automatically generate layers using hidden_nodes array. (Using a looping condition)
 
     def generator(self, name, hidden_nodes = [10,10], input_dim = 2, output_dim = 2, initializer = tf.keras.initializers.he_normal() ):
         """
@@ -137,8 +126,6 @@ class RoboGAN:
             gen : A tf node representing a Keras Sequential model
         """
         with tf.variable_scope(name):
-            # Tells model to expect batches of input_dim features
-            # inputs = Input(shape=(input_dim,))
 
             gen = tf.keras.Sequential([
                 Dense(units = hidden_nodes[0], activation="elu", input_dim=input_dim, kernel_initializer=initializer),
@@ -215,4 +202,7 @@ class RoboGAN:
         return total_loss
 
     def safe_log(self, X, epsilon = 1e-24):
+        """
+        To prevent runtime errors from log(0)
+        """
         return tf.log(X+epsilon)
