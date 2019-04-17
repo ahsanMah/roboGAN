@@ -106,7 +106,7 @@ class RoboGAN:
 
     # TODO: Automatically generate layers using hidden_nodes array. (Using a looping condition)
 
-    def generator(self, name, hidden_nodes = [10,10], input_dim = 2, output_dim = 2, initializer = tf.keras.initializers.he_normal() ):
+    def generator(self, name, hidden_nodes = [50, 50, 50], input_dim = 2, output_dim = 2, initializer = tf.keras.initializers.he_normal() ):
         """
         Generator will transform the input data into the output domain
         
@@ -129,8 +129,9 @@ class RoboGAN:
 
             gen = tf.keras.Sequential([
                 Dense(units = hidden_nodes[0], activation="elu", input_dim=input_dim, kernel_initializer=initializer),
-                Dense(units = hidden_nodes[1], activation="tanh",kernel_initializer=initializer),
-                Dense(units = output_dim, kernel_initializer=initializer)
+                Dense(units = hidden_nodes[1], activation="elu", kernel_initializer=initializer),
+                Dense(units = hidden_nodes[2], activation="elu", kernel_initializer=initializer),
+                Dense(units = output_dim, activation="tanh", kernel_initializer=initializer)
                 ])
 
         return gen
