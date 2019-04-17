@@ -136,7 +136,7 @@ class RoboGAN:
 
         return gen
 
-    def discriminator(self,name,hidden_nodes = [10,10], input_dim = 2,
+    def discriminator(self,name,hidden_nodes = [50,50, 50], input_dim = 2,
                     initializer = tf.keras.initializers.he_normal()):
         """
         Discriminator will output a single real value which will be 
@@ -161,6 +161,7 @@ class RoboGAN:
             disc = tf.keras.Sequential([
                 Dense(units = hidden_nodes[0], activation="elu", input_dim=input_dim, kernel_initializer=initializer),
                 Dense(units = hidden_nodes[1], activation="elu",kernel_initializer=initializer),
+                Dense(units = hidden_nodes[2], activation="elu",kernel_initializer=initializer),
                 Dense(units = 1,kernel_initializer=initializer)
                 ])
             # print(disc.summary())
@@ -186,7 +187,9 @@ class RoboGAN:
         """
 
         if heuristic:
-            return -0.5 * tf.reduce_mean(self.safe_log(fake_output))
+            P_X = tf.keras.backend.softmax(fake_output)
+            print(fake_output)
+            return -0.5 * tf.reduce_mean(self.safe_log(P_X))
 
         return self.BCE(tf.ones_like(fake_output), fake_output)
 
