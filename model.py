@@ -105,7 +105,14 @@ class RoboGAN:
         return trainers
 
     # TODO: Automatically generate layers using hidden_nodes array. (Using a looping condition)
-
+    
+    def genSliceTanh(self, input_dim):
+        nrVals = round(input_dim/5)
+        def sliceTanh(x):
+            y = tf.concat([tf.tanh(x[:,0:2*nrVals]),x[:,2*nrVals:]],1)
+            return y
+        return sliceTanh
+    
     def generator(self, name, hidden_nodes = [50, 50, 50], input_dim = 2, output_dim = 2, initializer = tf.keras.initializers.he_normal() ):
         """
         Generator will transform the input data into the output domain
@@ -125,13 +132,14 @@ class RoboGAN:
         -------
             gen : A tf node representing a Keras Sequential model
         """
+        sliceTanh=self.genSliceTanh(input_dim)
         with tf.variable_scope(name):
 
             gen = tf.keras.Sequential([
                 Dense(units = hidden_nodes[0], activation="elu", input_dim=input_dim, kernel_initializer=initializer),
                 Dense(units = hidden_nodes[1], activation="elu", kernel_initializer=initializer),
                 Dense(units = hidden_nodes[2], activation="elu", kernel_initializer=initializer),
-                Dense(units = output_dim, activation="tanh", kernel_initializer=initializer)
+                Dense(units = output_dim, activation=sliceTanh, kernel_initializer=initializer)
                 ])
 
         return gen
@@ -161,7 +169,7 @@ class RoboGAN:
             disc = tf.keras.Sequential([
                 Dense(units = hidden_nodes[0], activation="elu", input_dim=input_dim, kernel_initializer=initializer),
                 Dense(units = hidden_nodes[1], activation="elu",kernel_initializer=initializer),
-                Dense(units = hidden_nodes[2], activation="elu",kernel_initializer=initializer),
+                #Dense(units = hidden_nodes[2], activation="elu",kernel_initializer=initializer),
                 Dense(units = 1,kernel_initializer=initializer)
                 ])
             # print(disc.summary())
