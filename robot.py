@@ -90,6 +90,17 @@ def drawRobotArm(data):
     plt.plot(x1,y1,'ro')
     plt.xlim([-4,4])
     plt.ylim([-4,4])
+    
+def plotRobotDistribution(data):
+    nrLinks = round(data.shape[1]/2)
+    for i in range(nrLinks-1,-1,-1):
+        print(i)
+        plt.scatter(data[:,(i)*2], data[:,(i)*2+1], alpha= 0.5)
+    plt.xlim([-4,4])
+    plt.ylim([-4,4])
+    
+
+
 
 
 
