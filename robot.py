@@ -99,6 +99,20 @@ def plotRobotDistribution(data):
     plt.xlim([-4,4])
     plt.ylim([-4,4])
     
+def positionsFromAngles(data, nrLinks, lengths):
+    angles=np.zeros([data.shape[0], nrLinks])
+    print(angles.shape)
+    for i in range(data.shape[0]):
+        for j in range(nrLinks):
+            print(np.arcsin(data[i,2*j]))
+            print(np.arccos(data[i,2*j+1]))
+            angles[i,j] = (np.arcsin(data[i,2*j]) + np.arccos(data[i,2*j+1]))/2
+    print(angles[0:5,:])
+    Y = computeY(angles, lengths)
+    print(Y.shape)
+    return np.concatenate([data[:,:2*nrLinks], Y], axis = 1)
+    
+    
 
 
 
