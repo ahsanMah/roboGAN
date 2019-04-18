@@ -39,7 +39,8 @@ class RoboGAN:
             beta1: float
                 momentum term of Adam 
         """
-        
+        self.nrLinksX = round(nDimX/5)
+        self.nrLinksY = round(nDimY/5)
         self.armlengthG = armlengthG
         self.armlengthF = armlengthF
         self.lambda1 = lambda1
@@ -54,12 +55,13 @@ class RoboGAN:
         # Generating forward GAN = G: X -> Y
         self.X = tf.placeholder(tf.float32, shape=(None,nDimX), name= "X")
         self.G = self.generator(name= "G", input_dim= nDimX, output_dim= nDimY)
-        self.D_Y = self.discriminator(name= "D_Y", input_dim= nDimY)
+        
+        self.D_Y = self.discriminator(name= "D_Y", input_dim= nDimY+2)
 
         # Generating backward GAN = F: Y -> X
         self.Y = tf.placeholder(tf.float32, shape=(None, nDimY), name="Y")
         self.F = self.generator(name= "F", input_dim= nDimY, output_dim= nDimX)
-        self.D_X = self.discriminator(name= "D_X", input_dim= nDimX)
+        self.D_X = self.discriminator(name= "D_X", input_dim= nDimX+2)
 
         return
 
