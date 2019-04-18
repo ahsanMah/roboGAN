@@ -48,11 +48,13 @@ def train_step(GAN):
           cycle_loss = GAN.cycle_consistency_loss(G_Fx, F_Gy, X, Y)
           
           # Forward Loss
-          G_loss = GAN.generator_loss(D_Gy_logits, heuristic=False) + cycle_loss
+          G_dist_loss = GAN.end_effector_loss(X, fake_Y,0.1)  
+          G_loss = GAN.generator_loss(D_Gy_logits, heuristic=False) + cycle_loss + G_dist_loss
           D_Y_loss = GAN.discriminator_loss(real_output= D_Y_logits, fake_output= D_Gy_logits)
           
           # Backward Loss
-          F_loss = GAN.generator_loss(D_Fx_logits, heuristic=False) + cycle_loss
+          F_dist_loss = GAN.end_effector_loss(Y, fake_X, 0.1) 
+          F_loss = GAN.generator_loss(D_Fx_logits, heuristic=False) + cycle_loss + F_dist_loss
           D_X_loss = GAN.discriminator_loss(real_output= D_X_logits, fake_output= D_Fx_logits)
           
           # Gradient Computations

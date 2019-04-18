@@ -24,7 +24,7 @@ class RoboGAN:
     
     def __init__(self,nDimX, nDimY, \
                 lambda1=10,lambda2=10, \
-                learning_rate=2e-4,beta1=0.5):      
+                learning_rate=2e-4,beta1=0.5, armlengthG=2, armlengthF=2):      
         """
         Parameters
         ----------
@@ -40,6 +40,8 @@ class RoboGAN:
                 momentum term of Adam 
         """
         
+        self.armlengthG = armlengthG
+        self.armlengthF = armlengthF
         self.lambda1 = lambda1
         self.lambda2 = lambda2
         self.learning_rate = learning_rate
@@ -185,6 +187,17 @@ class RoboGAN:
         loss = self.lambda1*forward_loss + self.lambda2*backward_loss
         return loss
 
+    
+    def end_effector_loss(self,inputData, outputData, maxLength):
+        inputLinks = round(inputData.shape[1].value/5)
+        outputLinks = round(outputData.shape[1].value/5)
+       
+        endeff1 = inputData[:,inputLinks*4-2:inputLinks*4]
+        endeff2 = outputData[:,outputLinks*4-2:outputLinks*4]
+        norms = tf.norm(endeff1-endeff2, axis=1)
+        avg = tf.reduce_mean(norms)/maxLength
+        return avg
+            
     
     # NOTE: Both losses assume non-sigmoid logits as input
 
