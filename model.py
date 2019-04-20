@@ -24,7 +24,7 @@ class RoboGAN:
     
     def __init__(self,nDimX, nDimY, \
                 lambda1=10,lambda2=10, \
-                learning_rate=2e-4,beta1=0.5, armlengthG=2, armlengthF=2):      
+                learning_rate=2e-4,beta1=0.5, endposDiscriminator = False, endposGenerator = False, armlengthG=2, armlengthF=2):      
         """
         Parameters
         ----------
@@ -39,6 +39,8 @@ class RoboGAN:
             beta1: float
                 momentum term of Adam 
         """
+        self.endposGenerator = endposGenerator
+        self.endposDiscriminator = endposDiscriminator
         self.nrLinksX = round(nDimX/5)
         self.nrLinksY = round(nDimY/5)
         self.armlengthG = armlengthG
@@ -56,12 +58,18 @@ class RoboGAN:
         self.X = tf.placeholder(tf.float32, shape=(None,nDimX), name= "X")
         self.G = self.generator(name= "G", input_dim= nDimX, output_dim= nDimY)
         
-        self.D_Y = self.discriminator(name= "D_Y", input_dim= nDimY+2)
+        if(self.endposDiscriminator):
+            dimY = nDimY+2
+            dimX = nDimX+2
+        else:
+            dimY = nDimY
+            dimX = nDimX
+        self.D_Y = self.discriminator(name= "D_Y", input_dim= dimY)
 
         # Generating backward GAN = F: Y -> X
         self.Y = tf.placeholder(tf.float32, shape=(None, nDimY), name="Y")
         self.F = self.generator(name= "F", input_dim= nDimY, output_dim= nDimX)
-        self.D_X = self.discriminator(name= "D_X", input_dim= nDimX+2)
+        self.D_X = self.discriminator(name= "D_X", input_dim= dimX)
 
         return
 

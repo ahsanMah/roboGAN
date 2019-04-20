@@ -24,6 +24,8 @@ def train_step(GAN):
      D_X, D_Y = GAN.D_X, GAN.D_Y
      nrLinksX = GAN.nrLinksX
      nrLinksY = GAN.nrLinksY
+     print(GAN.endposDiscriminator)
+     print(GAN.endposGenerator)
 
      losses = []
      gradients = []
@@ -36,33 +38,54 @@ def train_step(GAN):
      
           # Generating forward samples X -> Y
           fake_Y = G(X)
-          #D_Gy_logits = D_Y(fake_Y)
-          #D_Y_logits = D_Y(Y)
-          D_Gy_logits = D_Y(tf.concat([fake_Y,X[:,nrLinksX*4-2:nrLinksX*4]], axis = 1))
-          D_Y_logits = D_Y(tf.concat([Y,Y[:,nrLinksY*4-2:nrLinksY*4]], axis = 1))
-          
-          # Generating backward samples X <- Y
           fake_X = F(Y)
-          #D_Fx_logits = D_X(fake_X) # D_Fx = D_X ( F(Y) )
-          #D_X_logits = D_X(X)
-          D_Fx_logits = D_X(tf.concat([fake_X,Y[:,nrLinksY*4-2:nrLinksY*4]],axis = 1)) # D_Fx = D_X ( F(Y) )
-          D_X_logits = D_X(tf.concat([X,X[:,nrLinksX*4-2:nrLinksX*4]],axis = 1))
           
+          if(GAN.endposDiscriminator):
+              print('additional discriminator loss')
+              D_Gy_logits = D_Y(tf.concat([fake_Y,X[:,nrLinksX*4-2:nrLinksX*4]], axis = 1))
+              D_Y_logits = D_Y(tf.concat([Y,Y[:,nrLinksY*4-2:nrLinksY*4]], axis = 1))
+            
+              D_Fx_logits = D_X(tf.concat([fake_X,Y[:,nrLinksY*4-2:nrLinksY*4]],axis = 1))
+              D_X_logits = D_X(tf.concat([X,X[:,nrLinksX*4-2:nrLinksX*4]],axis = 1))
+          else:
+              print('no additional discriminator loss')
+              D_Gy_logits = D_Y(fake_Y)
+              D_Y_logits = D_Y(Y)
+            
+              D_Fx_logits = D_X(fake_X) # D_Fx = D_X ( F(Y) )
+              D_X_logits = D_X(X)
+            
+          print('Discriminator done')
           G_Fx = G(fake_X)
           F_Gy = F(fake_Y)
+          print('Cycle done')
+          
+          
+          # Generating backward samples X <- Y
+          
+          
+           # D_Fx = D_X ( F(Y) )
+          #
           
           cycle_loss = GAN.cycle_consistency_loss(G_Fx, F_Gy, X, Y)
           
           # Forward Loss
-          #G_dist_loss = GAN.end_effector_loss(X, fake_Y, 1)  
-          G_loss = GAN.generator_loss(D_Gy_logits, heuristic=False) + cycle_loss# + G_dist_loss
           
-          
+          if(GAN.endposGenerator):
+              G_dist_loss = GAN.end_effector_loss(X, fake_Y, 1)  
+              G_loss = GAN.generator_loss(D_Gy_logits, heuristic=False) + cycle_loss + G_dist_loss
+          else:
+              G_loss = GAN.generator_loss(D_Gy_logits, heuristic=False) + cycle_loss
+      
           D_Y_loss = GAN.discriminator_loss(real_output= D_Y_logits, fake_output= D_Gy_logits)
           
           # Backward Loss
-          #F_dist_loss = GAN.end_effector_loss(Y, fake_X, 1) 
-          F_loss = GAN.generator_loss(D_Fx_logits, heuristic=False) + cycle_loss# + F_dist_loss
+          if(GAN.endposGenerator):
+              F_dist_loss = GAN.end_effector_loss(Y, fake_X, 1) 
+              F_loss = GAN.generator_loss(D_Fx_logits, heuristic=False) + cycle_loss + F_dist_loss
+          else:
+              F_loss = GAN.generator_loss(D_Fx_logits, heuristic=False) + cycle_loss
+                
           D_X_loss = GAN.discriminator_loss(real_output= D_X_logits, fake_output= D_Fx_logits)
           
           # Gradient Computations
