@@ -73,21 +73,25 @@ def computeRobotData(angles, nrLinks, lengths, nrSamples):
 
 #call with positions (first 2*nrLinks elements of y)
 def drawRobotArm(data):
-    nrLinks = round(len(data)/2)
+    if(len(data.shape)) == 1:
+        data = np.expand_dims(data, axis=0)
+    nrLinks = round(data.shape[1]/2)
+    colors = ['blue', 'orange', 'green', 'violett', 'coral', 'seagreen']
     print(nrLinks)
-    
-    for i in range(nrLinks):
-        if i==0:
-            x0=0
-            y0=0
-           
-        else:
-            x0=data[2*(i-1)]
-            y0=data[2*(i-1)+1]
-        x1=data[2*(i)]
-        y1=data[2*(i)+1]
-        plt.plot([x0,x1], [y0,y1])
-    plt.plot(x1,y1,'ro')
+    for j in range(data.shape[0]):
+        for i in range(nrLinks):
+            if i==0:
+                x0=0
+                y0=0
+
+            else:
+                x0=data[j,2*(i-1)]
+                y0=data[j,2*(i-1)+1]
+            x1=data[j,2*(i)]
+            y1=data[j,2*(i)+1]
+            plt.plot([x0,x1], [y0,y1], color = colors[i])
+        plt.plot(x1,y1,'ro',linewidth=5)
+    plt.plot(0,0,'o',color='black',linewidth=5)
     plt.xlim([-4,4])
     plt.ylim([-4,4])
     
