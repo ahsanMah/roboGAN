@@ -26,6 +26,7 @@ def train_step(GAN):
      nrLinksY = GAN.nrLinksY
      print(GAN.endposDiscriminator)
      print(GAN.endposGenerator)
+     print(GAN.allPosGenerator)
 
      losses = []
      gradients = []
@@ -69,23 +70,31 @@ def train_step(GAN):
           
           cycle_loss = GAN.cycle_consistency_loss(G_Fx, F_Gy, X, Y)
           
-          # Forward Loss
+          
           
           if(GAN.endposGenerator):
+              # Forward Loss
               G_dist_loss = GAN.end_effector_loss(X, fake_Y, 1)  
               G_loss = GAN.generator_loss(D_Gy_logits, heuristic=False) + cycle_loss + G_dist_loss
-          else:
-              G_loss = GAN.generator_loss(D_Gy_logits, heuristic=False) + cycle_loss
-      
-          D_Y_loss = GAN.discriminator_loss(real_output= D_Y_logits, fake_output= D_Gy_logits)
-          
-          # Backward Loss
-          if(GAN.endposGenerator):
+                
+              # Backward Loss
               F_dist_loss = GAN.end_effector_loss(Y, fake_X, 1) 
               F_loss = GAN.generator_loss(D_Fx_logits, heuristic=False) + cycle_loss + F_dist_loss
+            
           else:
-              F_loss = GAN.generator_loss(D_Fx_logits, heuristic=False) + cycle_loss
+              if(GAN.allPosGenerator):
+                  # Forward Loss
+                  G_all_pos_loss = GAN.end_effector_loss(X, fake_Y, 1)  
+                  G_loss = GAN.generator_loss(D_Gy_logits, heuristic=False) + cycle_loss + G_all_pos_loss
                 
+                  # Backward Loss
+                  F_all_pos_loss = GAN.end_effector_loss(Y, fake_X, 1) 
+                  F_loss = GAN.generator_loss(D_Fx_logits, heuristic=False) + cycle_loss + F_all_pos_loss
+              else:
+                  G_loss = GAN.generator_loss(D_Gy_logits, heuristic=False) + cycle_loss
+                  F_loss = GAN.generator_loss(D_Fx_logits, heuristic=False) + cycle_loss
+      
+          D_Y_loss = GAN.discriminator_loss(real_output= D_Y_logits, fake_output= D_Gy_logits)     
           D_X_loss = GAN.discriminator_loss(real_output= D_X_logits, fake_output= D_Fx_logits)
           
           # Gradient Computations

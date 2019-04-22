@@ -24,7 +24,7 @@ class RoboGAN:
     
     def __init__(self,nDimX, nDimY, \
                 lambda1=10,lambda2=10, \
-                learning_rate=2e-4,beta1=0.5, endposDiscriminator = False, endposGenerator = False, armlengthG=2, armlengthF=2):      
+                learning_rate=2e-4,beta1=0.5, endposDiscriminator = False, endposGenerator = False, allPosGenerator = False, armlengthG=2, armlengthF=2):      
         """
         Parameters
         ----------
@@ -40,6 +40,7 @@ class RoboGAN:
                 momentum term of Adam 
         """
         self.endposGenerator = endposGenerator
+        self.allPosGenerator = allPosGenerator
         self.endposDiscriminator = endposDiscriminator
         self.nrLinksX = round(nDimX/5)
         self.nrLinksY = round(nDimY/5)
@@ -207,6 +208,20 @@ class RoboGAN:
         norms = tf.norm(endeff1-endeff2, axis=1)
         avg = tf.reduce_mean(norms)/maxLength
         return avg
+    
+    def all_positions_loss(self,inputData, outputData, maxLength):
+        inputLinks = round(inputData.shape[1].value/5)
+        outputLinks = round(outputData.shape[1].value/5)
+       
+        #ToDo generalize for different numbers of links:
+        loss = 0
+        for i in range(inputLinks):
+            pos1 = inputData[:,inputLinks*2+ 2 * i :inputLinks*2 + 2*i + 1]
+            pos2 = outputData[:,outputLinks*2 + 2 * i : outputLinks*2 + 2*i + 1]
+            norms = tf.norm(pos1-pos2, axis=1)
+            avg = tf.reduce_mean(norms)/maxLength
+            loss += avg
+        return loss
             
     
     # NOTE: Both losses assume non-sigmoid logits as input
