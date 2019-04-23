@@ -74,6 +74,7 @@ def train_step(GAN):
           
           if(GAN.endposGenerator):
               # Forward Loss
+              print('end effector generator')
               G_dist_loss = GAN.end_effector_loss(X, fake_Y, 1)  
               G_loss = GAN.generator_loss(D_Gy_logits, heuristic=False) + cycle_loss + G_dist_loss
                 
@@ -81,16 +82,22 @@ def train_step(GAN):
               F_dist_loss = GAN.end_effector_loss(Y, fake_X, 1) 
               F_loss = GAN.generator_loss(D_Fx_logits, heuristic=False) + cycle_loss + F_dist_loss
             
-          else:
+          else: #ToDo automate maxLength
               if(GAN.allPosGenerator):
+                  print('all pos generator')
                   # Forward Loss
-                  G_all_pos_loss = GAN.end_effector_loss(X, fake_Y, 1)  
-                  G_loss = GAN.generator_loss(D_Gy_logits, heuristic=False) + cycle_loss + G_all_pos_loss
+                  G_dist_loss = GAN.end_effector_loss(X, fake_Y, 3)  
+                  G_all_pos_loss = GAN.all_positions_loss(X, fake_Y, 3)  
+                  print(G_all_pos_loss)
+                  G_loss = GAN.generator_loss(D_Gy_logits, heuristic=False) + cycle_loss + G_all_pos_loss + G_dist_loss
                 
                   # Backward Loss
-                  F_all_pos_loss = GAN.end_effector_loss(Y, fake_X, 1) 
-                  F_loss = GAN.generator_loss(D_Fx_logits, heuristic=False) + cycle_loss + F_all_pos_loss
+                  F_dist_loss = GAN.end_effector_loss(Y, fake_X, 3) 
+                  F_all_pos_loss = GAN.all_positions_loss(Y, fake_X, 3) 
+                  print(F_all_pos_loss)
+                  F_loss = GAN.generator_loss(D_Fx_logits, heuristic=False) + cycle_loss + F_all_pos_loss + F_dist_loss
               else:
+                  print('standard loss generator')
                   G_loss = GAN.generator_loss(D_Gy_logits, heuristic=False) + cycle_loss
                   F_loss = GAN.generator_loss(D_Fx_logits, heuristic=False) + cycle_loss
       

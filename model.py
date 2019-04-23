@@ -209,18 +209,20 @@ class RoboGAN:
         avg = tf.reduce_mean(norms)/maxLength
         return avg
     
+    #ToDo fix!
     def all_positions_loss(self,inputData, outputData, maxLength):
         inputLinks = round(inputData.shape[1].value/5)
         outputLinks = round(outputData.shape[1].value/5)
        
         #ToDo generalize for different numbers of links:
         loss = 0
-        for i in range(inputLinks):
-            pos1 = inputData[:,inputLinks*2+ 2 * i :inputLinks*2 + 2*i + 1]
-            pos2 = outputData[:,outputLinks*2 + 2 * i : outputLinks*2 + 2*i + 1]
+        for i in range(inputLinks): #inputLinks
+            pos1 = inputData[:,(inputLinks*2)+ (2 * i) :(inputLinks*2) + (2*i) + 1]
+            pos2 = outputData[:,(outputLinks*2) + (2 * i) : (outputLinks*2 + 2*i) + 1]
             norms = tf.norm(pos1-pos2, axis=1)
             avg = tf.reduce_mean(norms)/maxLength
             loss += avg
+        loss = loss/inputLinks
         return loss
             
     

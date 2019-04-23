@@ -72,34 +72,41 @@ def computeRobotData(angles, nrLinks, lengths, nrSamples):
     return x,y
 
 #call with positions (first 2*nrLinks elements of y)
-def drawRobotArm(data):
-    if(len(data.shape)) == 1:
+def drawRobotArm(data, showLinks=True):
+    if len(data.shape) == 1:
         data = np.expand_dims(data, axis=0)
+    if len(data.shape) == 2:
+        data = np.expand_dims(data, axis=2)
+        
+    print(data.shape)
     nrLinks = round(data.shape[1]/2)
-    colors = ['blue', 'orange', 'green', 'violett', 'coral', 'seagreen']
+    colors = [['blue', 'orange', 'green', 'darkviolet'], ['dodgerblue', 'goldenrod', 'chartreuse', 'deeppink']]
     print(nrLinks)
-    for j in range(data.shape[0]):
-        for i in range(nrLinks):
-            if i==0:
-                x0=0
-                y0=0
+    for k in range(data.shape[2]):
+        for j in range(data.shape[0]):
+            for i in range(nrLinks):
+                if i==0:
+                    x0=0
+                    y0=0
 
-            else:
-                x0=data[j,2*(i-1)]
-                y0=data[j,2*(i-1)+1]
-            x1=data[j,2*(i)]
-            y1=data[j,2*(i)+1]
-            plt.plot([x0,x1], [y0,y1], color = colors[i])
-        plt.plot(x1,y1,'ro',linewidth=5)
+                else:
+                    x0=data[j,2*(i-1),k]
+                    y0=data[j,2*(i-1)+1,k]
+                x1=data[j,2*(i),k]
+                y1=data[j,2*(i)+1,k]
+                if(showLinks):
+                    plt.plot([x0,x1], [y0,y1], color = colors[k][i])
+                plt.plot(x1,y1,'o',markersize=2, color = colors[k][i])
     plt.plot(0,0,'o',color='black',linewidth=5)
-    plt.xlim([-4,4])
-    plt.ylim([-4,4])
+    plt.xlim([-5,5])
+    plt.ylim([-5,5]) 
     
-def plotRobotDistribution(data):
+def plotRobotDistribution(data, colorId=0):
+    colors = [['blue', 'orange', 'green'], ['violet', 'seagreen', 'pink']]
     nrLinks = round(data.shape[1]/2)
     for i in range(nrLinks-1,-1,-1):
         print(i)
-        plt.scatter(data[:,(i)*2], data[:,(i)*2+1], alpha= 0.5)
+        plt.scatter(data[:,(i)*2], data[:,(i)*2+1], alpha= 0.5, color = colors[colorId][i])
     plt.xlim([-4,4])
     plt.ylim([-4,4])
     
