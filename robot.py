@@ -110,19 +110,61 @@ def plotRobotDistribution(data, colorId=0):
     plt.xlim([-4,4])
     plt.ylim([-4,4])
     
+    
+def getAvgAngle(s,c):
+    a1,a2 = getOriginalAngles(s,c)
+    return (a1+a2)/2
+
+
+def getOriginalAngles(s,c):
+    if c >= 0:
+        ang1 = np.arcsin(s)
+        if s >= 0:
+            ang2 = np.arccos(c)
+        else:
+            ang2 = -np.arccos(c)
+    else:
+        if s >= 0:
+            ang1 = np.pi - np.arcsin(s)
+            ang2 = np.arccos(c)
+        else:
+            ang1 = -np.pi - np.arcsin(s)
+            ang2 = -np.arccos(c)
+   
+    return ang1,ang2
+    
+       
+def endEffectorDist(set1, set2, nrLinks1, nrLinks2):
+    
+    endeff1 = set1[:,nrLinks1*4-2:nrLinks1*4]
+    endeff2 = set2[:,nrLinks2*4-2:nrLinks2*4]
+    norms = np.linalg.norm(endeff1-endeff2, axis=1)
+    return np.mean(norms)
+
 def positionsFromAngles(data, nrLinks, lengths):
     angles=np.zeros([data.shape[0], nrLinks])
-    print(angles.shape)
+   
     for i in range(data.shape[0]):
         for j in range(nrLinks):
-            print(np.arcsin(data[i,2*j]))
-            print(np.arccos(data[i,2*j+1]))
-            angles[i,j] = (np.arcsin(data[i,2*j]) + np.arccos(data[i,2*j+1]))/2
-    print(angles[0:5,:])
-    Y = computeY(angles, lengths)
-    print(Y.shape)
-    return np.concatenate([data[:,:2*nrLinks], Y], axis = 1)
+            #print(np.arcsin(data[i,2*j]))
+            #print(np.arccos(data[i,2*j+1]))
+            #angles[i,j] = (np.arcsin(data[i,2*j]) + np.arccos(data[i,2*j+1]))/2
+            angles[i,j] = getAvgAngle(data[i,2*j], data[i,2*j+1])
     
+    return computeY(angles, lengths)
+    #print(Y.shape)
+    #return np.concatenate([data[:,:2*nrLinks], Y], axis = 1)
+    
+def compareInternalPositions(data, nrLinks, lengths): #pos from angles vs real pos
+    anglePos = positionsFromAngles(data, nrLinks, lengths)[:,:nrLinks*2] #only positions, not distances
+    pos = data[:,nrLinks * 2 : nrLinks * 4]
+    norms = np.linalg.norm(anglePos - pos, axis=1)
+    return np.mean(norms)
+
+def replaceAnglePos(data, nrLinks, lengths):
+    Y=positionsFromAngles(data, nrLinks, lengths)
+    data[:,2*nrLinks:] = Y
+    return data
     
 
 

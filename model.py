@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 
 from tensorflow.keras.layers import Input, Dense
+from robot import compareInternalPositions
 
 class RoboGAN:
     
