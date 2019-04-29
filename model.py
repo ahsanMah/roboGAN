@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 from tensorflow.keras.layers import Input, Dense
-from robot import compareInternalPositions
+#from robot import compareInternalPositions
 
 class RoboGAN:
     
@@ -25,7 +25,7 @@ class RoboGAN:
     
     def __init__(self,nDimX, nDimY, \
                 lambda1=10,lambda2=10, \
-                learning_rate=2e-4,beta1=0.5, endposDiscriminator = False, endposGenerator = False, allPosGenerator = False, armlengthG=2, armlengthF=2):      
+                learning_rate=2e-4,beta1=0.5, endposDiscriminator = False, endposGenerator = False, allPosGenerator = False, lengthsX=[2,1], lengthsY=[2,1]):      
         """
         Parameters
         ----------
@@ -45,8 +45,10 @@ class RoboGAN:
         self.endposDiscriminator = endposDiscriminator
         self.nrLinksX = round(nDimX/5)
         self.nrLinksY = round(nDimY/5)
-        self.armlengthG = armlengthG
-        self.armlengthF = armlengthF
+        self.armlengthY = sum(lengthsY)
+        self.armlengthX = sum(lengthsX)
+        self.lengthsX = lengthsX
+        self.lengthsY = lengthsY
         self.lambda1 = lambda1
         self.lambda2 = lambda2
         self.learning_rate = learning_rate
@@ -198,6 +200,71 @@ class RoboGAN:
         backward_loss = tf.reduce_mean(tf.abs(G_Fx-y))
         loss = self.lambda1*forward_loss + self.lambda2*backward_loss
         return loss
+    
+    
+    
+    
+    def computeY(alphas, lengths):
+        nrSamples = alphas.shape[0].value
+        nrLinks = alphas.shape[1].value
+        y = tf.zeros((nrSamples,nrLinks * 3))
+        for i in range(nrSamples): #nrSamples
+            pose = tf.eye(3)#forwardR(alphas[i,nrLinks - 1],l[nrLinks - 1])
+            for j in range(nrLinks):
+                pose = tf.matmul(pose, R(alphas[i,j],lengths[j]))
+                #print(pose)
+                #print(pose)
+                y[i,2*j:2*(j+1)]=pose[0:2,2] #position
+                #if j>0:
+                y[i,(nrLinks*2) + j] = tf.norm(pose[0:2,2],axis=0) #dist from origin
+        return y
+
+
+    
+    def getOriginalAngles(self,s,c):
+        if c >= 0:
+            ang1 = tf.math.asin(s)
+            if s >= 0:
+                ang2 = tf.math.acos(c)
+            else:
+                ang2 = -tf.math.acos(c)
+        else:
+            if s >= 0:
+                ang1 = tf.pi - tf.math.asin(s)
+                ang2 = tf.math.acos(c)
+            else:
+                ang1 = -tf.pi - tf.math.asin(s)
+                ang2 = -tf.math.acos(c)
+
+        return (ang1 + ang2)/2
+    
+    def getAvgAngle(self,dataRow, nrLinks):
+        print('nrLinks')
+        print(nrLinks)
+        angles = tf.zeros([1,nrLinks*2])
+        for j in range(nrLinks):
+                print('sine value')
+                print(tf.shape(dataRow[2*j]))
+                angles[0,j] = self.getOriginalAngles(dataRow[2*j], dataRow[2*j+1])
+        #a1,a2 = self.getOriginalAngles(s,c)
+        return angles
+
+    
+    def positionsFromAngles(self,data, nrLinks, lengths):
+        print(tf.shape(data)[0])
+        angles=tf.zeros_like(data) #[tf.shape(data)[0], nrLinks]
+        for i in range(100): #tf.shape(data)[0] #replace with real batch size
+            angles[i,:] = self.getAvgAngle(data[i,:], nrLinks)
+        return self.computeY(angles, lengths)
+    
+    def compareInternalPositions(self, data, nrLinks, lengths): #pos from angles vs real pos
+        anglePos = self.positionsFromAngles(data, nrLinks, lengths)[:,:nrLinks*2] #only positions, not distances
+        pos = data[:,nrLinks * 2 : nrLinks * 4]
+        norms = tf.linalg.norm(anglePos - pos, axis=1)
+        return tf.reduce_mean(norms)
+    
+    def valid_config_loss(self, data, nrLinks, lengths):
+        return self.compareInternalPositions(data, nrLinks[0], lengths)
 
     
     def end_effector_loss(self,inputData, outputData, maxLength):
@@ -211,7 +278,7 @@ class RoboGAN:
         return avg
     
     #ToDo fix!
-    def all_positions_loss(self,inputData, outputData, maxLength):
+    def all_positions_loss(self, inputData, outputData, maxLength):
         inputLinks = round(inputData.shape[1].value/5)
         outputLinks = round(outputData.shape[1].value/5)
        
