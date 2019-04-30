@@ -222,7 +222,7 @@ class RoboGAN:
 
     
     def getOriginalAngles(self,s,c):
-        if c >= 0:
+        if tf.math.greater(c, 0):
             ang1 = tf.math.asin(s)
             if s >= 0:
                 ang2 = tf.math.acos(c)
@@ -244,7 +244,7 @@ class RoboGAN:
         angles = tf.zeros([1,nrLinks*2])
         for j in range(nrLinks):
                 print('sine value')
-                print(tf.shape(dataRow[2*j]))
+                print(tf.math.greater(dataRow[2*j], 0))
                 angles[0,j] = self.getOriginalAngles(dataRow[2*j], dataRow[2*j+1])
         #a1,a2 = self.getOriginalAngles(s,c)
         return angles
