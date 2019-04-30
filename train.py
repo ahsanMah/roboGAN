@@ -50,13 +50,15 @@ def train_step(GAN):
               D_X_logits = D_X(tf.concat([X,X[:,nrLinksX*4-2:nrLinksX*4]],axis = 1))
           else:
               print('no additional discriminator loss')
-              valid_Y_loss = GAN.valid_config_loss(fake_Y, GAN.lengthsY, nrLinksY)
+              valid_Y_loss = GAN.valid_config_loss(fake_Y, nrLinksY,GAN.lengthsY)
+              zero_loss = tf.zeros_like(valid_Y_loss)
               D_Gy_logits = D_Y(tf.concat([fake_Y, valid_Y_loss], axis = 1))
-              D_Y_logits = D_Y(tf.concat([Y,0], axis = 1))
+              D_Y_logits = D_Y(tf.concat([Y,zero_loss], axis = 1))
             
-              valid_X_loss = GAN.valid_config_loss(fake_X, GAN.lengthsX, nrLinksX)
+              valid_X_loss = GAN.valid_config_loss(fake_X, nrLinksX, GAN.lengthsX)
+             
               D_Fx_logits = D_X(tf.concat([fake_X, valid_X_loss], axis = 1)) # D_Fx = D_X ( F(Y) )
-              D_X_logits = D_X(tf.concat([X,0], axis = 1))
+              D_X_logits = D_X(tf.concat([X,zero_loss], axis = 1))
             
           print('Discriminator done')
           G_Fx = G(fake_X)
@@ -107,11 +109,12 @@ def train_step(GAN):
           D_X_loss = GAN.discriminator_loss(real_output= D_X_logits, fake_output= D_Fx_logits)
           
           # Gradient Computations
-          G_gradients = G_tape.gradient(G_loss, G.trainable_variables)
-          D_Y_gradients = D_Y_tape.gradient(D_Y_loss, D_Y.trainable_variables)
+#           G_gradients = G_tape.gradient(G_loss, G.trainable_variables)
+          G_gradients = tf.gradients(G_loss, G.trainable_variables)
+          D_Y_gradients = tf.gradients(D_Y_loss, D_Y.trainable_variables)
           
-          F_gradients = F_tape.gradient(F_loss, F.trainable_variables)
-          D_X_gradients = D_X_tape.gradient(D_X_loss, D_X.trainable_variables)
+          F_gradients = tf.gradients(F_loss, F.trainable_variables)
+          D_X_gradients = tf.gradients(D_X_loss, D_X.trainable_variables)
 
           losses.extend([G_loss, F_loss, D_Y_loss, D_X_loss])
           gradients.extend([G_gradients, F_gradients, D_Y_gradients, D_X_gradients])

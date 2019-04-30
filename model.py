@@ -25,7 +25,7 @@ class RoboGAN:
     
     def __init__(self,nDimX, nDimY, \
                 lambda1=10,lambda2=10, \
-                learning_rate=2e-4,beta1=0.5, endposDiscriminator = False, endposGenerator = False, allPosGenerator = False, lengthsX=[2,1], lengthsY=[2,1]):      
+                learning_rate=2e-4,beta1=0.5, endposDiscriminator = False, endposGenerator = False, allPosGenerator = False, lengthsX=[2,1], lengthsY=[2,1], conditional_disc=False):      
         """
         Parameters
         ----------
@@ -53,6 +53,7 @@ class RoboGAN:
         self.lambda2 = lambda2
         self.learning_rate = learning_rate
         self.beta1 = beta1
+        self.conditional_disc = conditional_disc
 
         self.BCE = tf.keras.losses.BinaryCrossentropy(from_logits=True)
         
@@ -181,9 +182,15 @@ class RoboGAN:
         -------
             disc : A tf node representing a Keras Sequential model
         """
+        
+        dimensions = input_dim
+        
+        if self.conditional_disc:
+            dimensions += 1
+        
         with tf.variable_scope(name):
             disc = tf.keras.Sequential([
-                Dense(units = hidden_nodes[0], activation="elu", input_dim=input_dim, kernel_initializer=initializer),
+                Dense(units = hidden_nodes[0], activation="elu", input_dim=dimensions, kernel_initializer=initializer),
                 Dense(units = hidden_nodes[1], activation="elu",kernel_initializer=initializer),
                 #Dense(units = hidden_nodes[2], activation="elu",kernel_initializer=initializer),
                 Dense(units = 1,kernel_initializer=initializer)
@@ -205,22 +212,43 @@ class RoboGAN:
     
     
     def computeY(self,alphas, lengths):
+        print("Alphas: {}".format(alphas))
+        print("Lengths: {}".format(lengths))
         nrSamples = alphas.shape[0].value
         nrLinks = alphas.shape[1].value
-        y = tf.zeros((nrSamples,nrLinks * 3))
+        
+        
+        y = [] #tf.zeros((nrSamples,nrLinks * 3))
         for i in range(nrSamples): #nrSamples
+            positions = [[]]
+            norms = [[]]
             pose = tf.eye(3)#forwardR(alphas[i,nrLinks - 1],l[nrLinks - 1])
             for j in range(nrLinks):
-                pose = tf.matmul(pose, R(alphas[i,j],lengths[j]))
+                pose = tf.matmul(pose, self.R(alphas[i,j],lengths[j]))
                 #print(pose)
                 #print(pose)
-                y[i,2*j:2*(j+1)]=pose[0:2,2] #position
+#                 y[i,2*j:2*(j+1)]=pose[0:2,2] #position
+                _pose = [[pose[0,2], pose[1,2]]]
+                positions=tf.concat((positions,_pose),axis=1) 
+#                 positions.extend(pose[0:2,2])
                 #if j>0:
-                y[i,(nrLinks*2) + j] = tf.norm(pose[0:2,2],axis=0) #dist from origin
+#                 y[i,(nrLinks*2) + j] = tf.norm(pose[0:2,2],axis=0) #dist from origin
+#                 _norm = [[tf.norm(pose[0:2,2])]]
+
+#                 norms = tf.concat([norms,_norm], axis=1)
+
+#             y.append(tf.concat((positions,norms),axis=1))
+            y.append(positions)
+        
+#         print(y)
+        y = tf.squeeze(tf.stack(y))
+        
         return y
 
 
-    
+    def R(self, alpha, l ):
+        return tf.convert_to_tensor([[tf.math.cos(alpha),-tf.math.sin(alpha), tf.math.cos(alpha)*l],[tf.math.sin(alpha), tf.math.cos(alpha), tf.math.sin(alpha)*l],[0, 0, 1]])
+
 #     def getOriginalAngles(self,s,c):
 #         if tf.math.greater(c, 0):
 #             ang1 = tf.math.asin(s)
@@ -246,7 +274,7 @@ class RoboGAN:
         
         cond_true = lambda: tf.math.asin(s)
         cond_false = lambda: tf.cond(s_cond, 
-                                     lambda: -(np.pi - tf.math.asin(s)),
+                                     lambda: -np.pi - tf.math.asin(s),
                                      lambda: (np.pi - tf.math.asin(s)))
         
         
@@ -302,13 +330,15 @@ class RoboGAN:
         return self.computeY(angles, lengths)
     
     def compareInternalPositions(self, data, nrLinks, lengths): #pos from angles vs real pos
-        anglePos = self.positionsFromAngles(data, nrLinks, lengths)[:,:nrLinks*2] #only positions, not distances
+        anglePos = self.positionsFromAngles(data, nrLinks, lengths) #only positions, not distances
         pos = data[:,nrLinks * 2 : nrLinks * 4]
-        norms = tf.linalg.norm(anglePos - pos, axis=1)
-        return tf.reduce_mean(norms)
+        norms = [tf.linalg.norm(anglePos - pos, axis=1)]
+        norms = tf.transpose(norms)
+        print("Norms: {}".format(norms))
+        return norms #tf.transpose(tf.reduce_mean(norms))
     
     def valid_config_loss(self, data, nrLinks, lengths):
-        return self.compareInternalPositions(data, nrLinks[0], lengths)
+        return self.compareInternalPositions(data, nrLinks, lengths)
 
     
     def end_effector_loss(self,inputData, outputData, maxLength):
