@@ -204,7 +204,7 @@ class RoboGAN:
     
     
     
-    def computeY(alphas, lengths):
+    def computeY(self,alphas, lengths):
         nrSamples = alphas.shape[0].value
         nrLinks = alphas.shape[1].value
         y = tf.zeros((nrSamples,nrLinks * 3))
@@ -221,40 +221,84 @@ class RoboGAN:
 
 
     
+#     def getOriginalAngles(self,s,c):
+#         if tf.math.greater(c, 0):
+#             ang1 = tf.math.asin(s)
+#             if s >= 0:
+#                 ang2 = tf.math.acos(c)
+#             else:
+#                 ang2 = -tf.math.acos(c)
+#         else:
+#             if s >= 0:
+#                 ang1 = tf.pi - tf.math.asin(s)
+#                 ang2 = tf.math.acos(c)
+#             else:
+#                 ang1 = -tf.pi - tf.math.asin(s)
+#                 ang2 = -tf.math.acos(c)
+
+#         return (ang1 + ang2)/2
+    
+    # Rewriting function for tensorflow
     def getOriginalAngles(self,s,c):
-        if tf.math.greater(c, 0):
-            ang1 = tf.math.asin(s)
-            if s >= 0:
-                ang2 = tf.math.acos(c)
-            else:
-                ang2 = -tf.math.acos(c)
-        else:
-            if s >= 0:
-                ang1 = tf.pi - tf.math.asin(s)
-                ang2 = tf.math.acos(c)
-            else:
-                ang1 = -tf.pi - tf.math.asin(s)
-                ang2 = -tf.math.acos(c)
+        
+        condition = tf.math.greater(c, 0)
+        s_cond = tf.math.less(s,0)
+        
+        cond_true = lambda: tf.math.asin(s)
+        cond_false = lambda: tf.cond(s_cond, 
+                                     lambda: -(np.pi - tf.math.asin(s)),
+                                     lambda: (np.pi - tf.math.asin(s)))
+        
+        
+        s_cond_a2_true = lambda: -tf.math.acos(c)
+        s_cond_a2_false = lambda: tf.math.acos(c)
+        
+        
+        ang1 = tf.cond(condition, cond_true, cond_false)
+        ang2 = tf.cond(s_cond, s_cond_a2_true, s_cond_a2_false)
 
         return (ang1 + ang2)/2
     
+    
+    
+#     def getAvgAngle(self,dataRow, nrLinks):
+#         print('nrLinks')
+#         print(nrLinks)
+#         angles = tf.zeros([1,nrLinks*2])
+#         for j in range(nrLinks):
+#                 print('sine value')
+#                 print(tf.math.greater(dataRow[2*j], 0))
+#                 angles[0,j] = self.getOriginalAngles(dataRow[2*j], dataRow[2*j+1])
+#         #a1,a2 = self.getOriginalAngles(s,c)
+#         return angles
+
     def getAvgAngle(self,dataRow, nrLinks):
-        print('nrLinks')
-        print(nrLinks)
-        angles = tf.zeros([1,nrLinks*2])
+        
+        angles = []
         for j in range(nrLinks):
-                print('sine value')
-                print(tf.math.greater(dataRow[2*j], 0))
-                angles[0,j] = self.getOriginalAngles(dataRow[2*j], dataRow[2*j+1])
-        #a1,a2 = self.getOriginalAngles(s,c)
+                angles.append(self.getOriginalAngles(dataRow[2*j], dataRow[2*j+1]))
+        
+        angles  = tf.stack(angles)
+        
         return angles
 
     
+#     def positionsFromAngles(self,data, nrLinks, lengths):
+#         print(tf.shape(data)[0])
+#         angles=tf.zeros_like(data) #[tf.shape(data)[0], nrLinks]
+#         for i in range(100): #tf.shape(data)[0] #replace with real batch size
+#             angles[i,:] = self.getAvgAngle(data[i,:], nrLinks)
+#         return self.computeY(angles, lengths)
+    
     def positionsFromAngles(self,data, nrLinks, lengths):
         print(tf.shape(data)[0])
-        angles=tf.zeros_like(data) #[tf.shape(data)[0], nrLinks]
+        angles = []
         for i in range(100): #tf.shape(data)[0] #replace with real batch size
-            angles[i,:] = self.getAvgAngle(data[i,:], nrLinks)
+            angles.append(self.getAvgAngle(data[i,:], nrLinks))
+        
+        angles = tf.stack(angles)
+        print("Calculated Angles")
+        print(angles)
         return self.computeY(angles, lengths)
     
     def compareInternalPositions(self, data, nrLinks, lengths): #pos from angles vs real pos
