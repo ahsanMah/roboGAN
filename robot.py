@@ -97,11 +97,22 @@ def drawRobotArm(data, showLinks=True):
                 x1=data[j,2*(i),k]
                 y1=data[j,2*(i)+1,k]
                 if(showLinks):
-                    plt.plot([x0,x1], [y0,y1], color = colors[k][i])
-                plt.plot(x1,y1,'o',markersize=2, color = colors[k][i])
+                    if(j==0):
+                        if(i==0):
+                            label_ = 'Original'
+                        else:
+                            label_ = '_'
+                    else:
+                        label_ = '_nolegend_'
+                    plt.plot([x0,x1], [y0,y1], color = colors[k][i], label=label_)
+                plt.plot(x1,y1,'o',markersize=2, color = colors[k][i],label='_nolegend_')
     
-    plt.legend(("Original", "Generated"))
-    plt.plot(0,0,'o',color='black',linewidth=5)
+    lst = [" "] * 2*nrLinks
+    lst[0] = "Original"
+    lst[nrLinks] = "Generated"
+    print(lst)
+    plt.legend(lst)
+    plt.plot(0,0,'o',color='black',linewidth=5, label='_nolegend_')
     plt.xlim([-5,5])
     plt.ylim([-5,5]) 
     
