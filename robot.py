@@ -80,7 +80,9 @@ def drawRobotArm(data, showLinks=True):
         
     print(data.shape)
     nrLinks = round(data.shape[1]/2)
-    colors = [['blue', 'orange', 'green', 'darkviolet'], ['dodgerblue', 'goldenrod', 'chartreuse', 'deeppink']]
+#     colors = [['blue', 'orange', 'green', 'darkviolet'], ['dodgerblue', 'goldenrod', 'chartreuse', 'deeppink']]
+    colors = [['blue', 'orange', 'green', 'darkviolet'], ['chartreuse', 'deeppink', 'dodgerblue', 'goldenrod']]
+    
     print(nrLinks)
     for k in range(data.shape[2]):
         for j in range(data.shape[0]):
@@ -97,12 +99,15 @@ def drawRobotArm(data, showLinks=True):
                 if(showLinks):
                     plt.plot([x0,x1], [y0,y1], color = colors[k][i])
                 plt.plot(x1,y1,'o',markersize=2, color = colors[k][i])
+    
+    plt.legend(("Original", "Generated"))
     plt.plot(0,0,'o',color='black',linewidth=5)
     plt.xlim([-5,5])
     plt.ylim([-5,5]) 
     
 def plotRobotDistribution(data, colorId=0):
     colors = [['blue', 'orange', 'green'], ['violet', 'seagreen', 'pink']]
+
     nrLinks = round(data.shape[1]/2)
     for i in range(nrLinks-1,-1,-1):
         print(i)

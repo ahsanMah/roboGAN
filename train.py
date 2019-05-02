@@ -48,8 +48,8 @@ def train_step(GAN):
             
               D_Fx_logits = D_X(tf.concat([fake_X,Y[:,nrLinksY*4-2:nrLinksY*4]],axis = 1))
               D_X_logits = D_X(tf.concat([X,X[:,nrLinksX*4-2:nrLinksX*4]],axis = 1))
-          else:
-              print('no additional discriminator loss')
+          elif GAN.conditional_disc:
+              print('conditional internal discriminator loss')
               valid_Y_loss = GAN.valid_config_loss(fake_Y, nrLinksY,GAN.lengthsY)
               zero_loss = tf.zeros_like(valid_Y_loss)
               D_Gy_logits = D_Y(tf.concat([fake_Y, valid_Y_loss], axis = 1))
@@ -60,7 +60,16 @@ def train_step(GAN):
               D_Fx_logits = D_X(tf.concat([fake_X, valid_X_loss], axis = 1)) # D_Fx = D_X ( F(Y) )
               D_X_logits = D_X(tf.concat([X,zero_loss], axis = 1))
             
+          else:
+              print('no additional discriminator loss')
+              D_Gy_logits = D_Y(fake_Y)
+              D_Y_logits = D_Y(Y)
+             
+              D_Fx_logits = D_X(fake_X) # D_Fx = D_X ( F(Y) )
+              D_X_logits = D_X(X)
+            
           print('Discriminator done')
+          
           G_Fx = G(fake_X)
           F_Gy = F(fake_Y)
           print('Cycle done')
@@ -73,7 +82,6 @@ def train_step(GAN):
           #
           
           cycle_loss = GAN.cycle_consistency_loss(G_Fx, F_Gy, X, Y)
-          
           
           
           if(GAN.endposGenerator):
@@ -110,11 +118,11 @@ def train_step(GAN):
           
           # Gradient Computations
 #           G_gradients = G_tape.gradient(G_loss, G.trainable_variables)
-          G_gradients = tf.gradients(G_loss, G.trainable_variables)
-          D_Y_gradients = tf.gradients(D_Y_loss, D_Y.trainable_variables)
+          G_gradients = G_tape.gradient(G_loss, G.trainable_variables)
+          D_Y_gradients = D_Y_tape.gradient(D_Y_loss, D_Y.trainable_variables)
           
-          F_gradients = tf.gradients(F_loss, F.trainable_variables)
-          D_X_gradients = tf.gradients(D_X_loss, D_X.trainable_variables)
+          F_gradients = F_tape.gradient(F_loss, F.trainable_variables)
+          D_X_gradients = D_X_tape.gradient(D_X_loss, D_X.trainable_variables)
 
           losses.extend([G_loss, F_loss, D_Y_loss, D_X_loss])
           gradients.extend([G_gradients, F_gradients, D_Y_gradients, D_X_gradients])

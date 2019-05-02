@@ -88,6 +88,8 @@ class RoboGAN:
         self.opt_F = tf.train.AdamOptimizer(learning_rate= self.learning_rate, beta1= self.beta1)
         self.opt_D_Y = tf.train.AdamOptimizer(learning_rate= self.learning_rate, beta1= self.beta1)
         self.opt_D_X = tf.train.AdamOptimizer(learning_rate= self.learning_rate, beta1= self.beta1)
+#         self.opt_D_X = tf.train.MomentumOptimizer(learning_rate=self.learning_rate*10, momentum=0.9, use_nesterov=True)
+#         self.opt_D_Y = tf.train.MomentumOptimizer(learning_rate=self.learning_rate*10, momentum=0.9, use_nesterov=True)
         
         self.optimizers_init = True
         return 
@@ -156,12 +158,13 @@ class RoboGAN:
                 Dense(units = hidden_nodes[0], activation="elu", input_dim=input_dim, kernel_initializer=initializer),
                 Dense(units = hidden_nodes[1], activation="elu", kernel_initializer=initializer),
                 Dense(units = hidden_nodes[2], activation="elu", kernel_initializer=initializer),
+                Dense(units = hidden_nodes[2], activation="elu", kernel_initializer=initializer),
                 Dense(units = output_dim, activation=sliceTanh, kernel_initializer=initializer)
                 ])
 
         return gen
 
-    def discriminator(self,name,hidden_nodes = [50,50, 50], input_dim = 2,
+    def discriminator(self,name,hidden_nodes = [50,50,50], input_dim = 2,
                     initializer = tf.keras.initializers.he_normal()):
         """
         Discriminator will output a single real value which will be 
@@ -192,7 +195,7 @@ class RoboGAN:
             disc = tf.keras.Sequential([
                 Dense(units = hidden_nodes[0], activation="elu", input_dim=dimensions, kernel_initializer=initializer),
                 Dense(units = hidden_nodes[1], activation="elu",kernel_initializer=initializer),
-                #Dense(units = hidden_nodes[2], activation="elu",kernel_initializer=initializer),
+                Dense(units = hidden_nodes[2], activation="elu",kernel_initializer=initializer),
                 Dense(units = 1,kernel_initializer=initializer)
                 ])
             # print(disc.summary())
@@ -348,7 +351,8 @@ class RoboGAN:
         endeff1 = inputData[:,inputLinks*4-2:inputLinks*4]
         endeff2 = outputData[:,outputLinks*4-2:outputLinks*4]
         norms = tf.norm(endeff1-endeff2, axis=1)
-        avg = tf.reduce_mean(norms)/maxLength
+        avg = tf.reduce_mean(norms) #/maxLength
+
         return avg
     
     #ToDo fix!
@@ -362,7 +366,7 @@ class RoboGAN:
             pos1 = inputData[:,(inputLinks*2)+ (2 * i) :(inputLinks*2) + (2*i) + 1]
             pos2 = outputData[:,(outputLinks*2) + (2 * i) : (outputLinks*2 + 2*i) + 1]
             norms = tf.norm(pos1-pos2, axis=1)
-            avg = tf.reduce_mean(norms)/maxLength
+            avg = tf.reduce_mean(norms)  #/maxLength
             loss += avg
         loss = loss/inputLinks
         return loss
